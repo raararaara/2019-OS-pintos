@@ -307,6 +307,10 @@ load (const char *file_name, void (**eip) (void), void **esp)
   if (!setup_stack (esp))
     goto done;
 
+  struct thread *th = thread_current ();
+  /* Get kpage. */
+  uint8_t* kpage = pagedir_get_page (th->pagedir, ((uint8_t *) PHYS_BASE) - PGSIZE);
+
   /* Start address. */
   *eip = (void (*) (void)) ehdr.e_entry;
 
@@ -435,7 +439,6 @@ setup_stack (void **esp)
   bool success = false;
 
   kpage = palloc_get_page (PAL_USER | PAL_ZERO);
-  //kpage[0] = 0xff;
   if (kpage != NULL) 
     {
       success = install_page (((uint8_t *) PHYS_BASE) - PGSIZE, kpage, true);
