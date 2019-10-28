@@ -33,6 +33,7 @@ syscall_handler (struct intr_frame *f)
     break;
   }
   case  SYS_WAIT: {                   /* Wait for a child process to die. */
+	process_wait();
     break;
   }
   case  SYS_CREATE: {                 /* Create a file. */
