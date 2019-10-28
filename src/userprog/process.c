@@ -218,7 +218,7 @@ load (const char *file_name, void (**eip) (void), void **esp)
   bool success = false;
   int i;
 
-  printf("file_name: %s\n", file_name);
+  //printf("file_name: %s\n", file_name);
 
   /* Allocate and activate page directory. */
   t->pagedir = pagedir_create ();
@@ -227,7 +227,11 @@ load (const char *file_name, void (**eip) (void), void **esp)
   process_activate ();
 
   /* Open executable file. */
-  file = filesys_open ("echo");
+  char str[128];
+  int idx = 0;
+  for(i = 0; file_name[i] != ' '; i++)
+	  str[idx++] = file_name[i];
+  file = filesys_open (str);
   if (file == NULL) 
     {
       printf ("load: %s: open failed\n", file_name);
@@ -310,11 +314,10 @@ load (const char *file_name, void (**eip) (void), void **esp)
     goto done;
 
   char* cur = *esp-1;
-  printf("cur = %p\n", cur);
   //file_name to argv
   int sz = strlen(file_name) + 1, argc_cnt = 1;
   char** pcur = ((uintptr_t)cur - sz) / 4 * 4;
-  printf("pcur = %p(start addr of argv[])\n", pcur);
+  //printf("pcur = %p(start addr of argv[])\n", pcur);
   pcur -= 2;
   
   //parse
@@ -323,14 +326,14 @@ load (const char *file_name, void (**eip) (void), void **esp)
 	  if(*cur == ' ') {
 		  argc_cnt++;
 		  *pcur = cur+1;
-		  printf("%p(current addr of argv[])\n", *pcur);
+		  //printf("%p(current addr of argv[])\n", *pcur);
 		  pcur--;
 		  *cur = 0;
 	  }
 	  cur--;
   }
   *pcur = cur + 1;
-  printf("%p(current addr of argv[])\n", *pcur);
+  //printf("%p(current addr of argv[])\n", *pcur);
   
   pcur--;
   *pcur = (char**)(pcur + 1);
@@ -338,8 +341,8 @@ load (const char *file_name, void (**eip) (void), void **esp)
   *((int*)pcur) = argc_cnt;
   pcur--;
 
-  printf("%d\n", (int)((char*)*esp - (char*)pcur));
-  hex_dump(0, pcur, (char*)*esp - (char*)pcur, 1);
+  //printf("%d\n", (int)((char*)*esp - (char*)pcur));
+  //hex_dump(0, pcur, (char*)*esp - (char*)pcur, 1);
 
 
 
@@ -477,7 +480,7 @@ setup_stack (void **esp)
     {
       success = install_page (((uint8_t *) PHYS_BASE) - PGSIZE, kpage, true);
       if (success)
-        *esp = PHYS_BASE;
+        *esp = PHYS_BASE-12;
       else
         palloc_free_page (kpage);
     }
