@@ -86,11 +86,24 @@ start_process (void *file_name_)
    This function will be implemented in problem 2-2.  For now, it
    does nothing. */
 int
-process_wait (tid_t child_tid UNUSED) 
+process_wait (tid_t child_tid) 
 {
-  int64_t i;
-  for (;;) {
-    asm volatile("nop");
+  struct thread *cur = thread_current();
+  struct list *list = &cur->child_list;
+  struct list_elem* e;
+
+  for (e = list_begin(list);
+        e != list_end(list);
+        e = list_next(e)) {
+    struct thread* t = list_entry(e, struct thread, child_elem);
+    if (t->tid == child_tid) {
+      while (!t->is_done) {
+        thread_yield();
+      }
+      list_remove(e);
+      sema_up(&t->sema); 
+      return 0;
+    }
   }
   return 0;
 }
