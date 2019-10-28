@@ -5,6 +5,7 @@
 #include "threads/thread.h"
 #include "devices/shutdown.h"
 #include "userprog/process.h"
+#include "devices/input.h"
 
 static void syscall_handler (struct intr_frame *);
 
@@ -36,7 +37,8 @@ syscall_handler (struct intr_frame *f)
     break;
   }
   case  SYS_WAIT: {                   /* Wait for a child process to die. */
-	process_wait();
+    tid_t tid = *(tid_t*)((char*)f->esp + 4);
+	  process_wait(tid);
     break;
   }
   case  SYS_CREATE: {                 /* Create a file. */
@@ -55,11 +57,14 @@ syscall_handler (struct intr_frame *f)
     unsigned size = *(unsigned*)((char*)f->esp + 12);
     char *buffer = *(void**)((char*)f->esp + 8);
     int fd = *(int*)((char*)f->esp + 4);   
-    unsigned i;
-    for (i = 0; i < size; ++i) {
-      buffer[i] = input_getc();
+    printf("%d\n", size);
+    if (fd == 0) {
+      unsigned i;
+      for (i = 0; i < size; ++i) {
+        buffer[i] = input_getc();
+      }
+      f->eax = size;
     }
-    f->eax = size;
     break;
   }
   case  SYS_WRITE: {                 /* Write to a file. */
