@@ -30,7 +30,7 @@ syscall_init (void)
 static void
 syscall_handler (struct intr_frame *f) 
 {
-  switch(*f->esp) {
+  switch(*(int*)f->esp) {
   case  SYS_HALT:                   /* Halt the operating system. */
     shutdown_power_off();
     break;
@@ -59,6 +59,5 @@ syscall_handler (struct intr_frame *f)
   case  SYS_CLOSE:                  /* Close a file. */
     break;
   }
-  printf ("system call : %d\n", *p);
   thread_exit ();
 }
