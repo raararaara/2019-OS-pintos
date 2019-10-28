@@ -227,7 +227,7 @@ load (const char *file_name, void (**eip) (void), void **esp)
   process_activate ();
 
   /* Open executable file. */
-  file = filesys_open (file_name);
+  file = filesys_open ("echo");
   if (file == NULL) 
     {
       printf ("load: %s: open failed\n", file_name);
@@ -305,15 +305,46 @@ load (const char *file_name, void (**eip) (void), void **esp)
           break;
         }
     }
-
   /* Set up stack. */
   if (!setup_stack (esp))
     goto done;
 
-  struct thread *th = thread_current ();
-  /* Get kpage. */
-  uint8_t* kpage = pagedir_get_page (th->pagedir, ((uint8_t *) PHYS_BASE) - PGSIZE);
+  char* cur = *esp-1;
+  printf("cur = %p\n", cur);
+  //file_name to argv
+  int sz = strlen(file_name) + 1, argc_cnt = 1;
+  char** pcur = ((uintptr_t)cur - sz) / 4 * 4;
+  printf("pcur = %p(start addr of argv[])\n", pcur);
+  pcur -= 2;
+  
+  //parse
+  while(sz--){
+	  *cur = file_name[sz];
+	  if(*cur == ' ') {
+		  argc_cnt++;
+		  *pcur = cur+1;
+		  printf("%p(current addr of argv[])\n", *pcur);
+		  pcur--;
+		  *cur = 0;
+	  }
+	  cur--;
+  }
+  *pcur = cur + 1;
+  printf("%p(current addr of argv[])\n", *pcur);
+  
+  pcur--;
+  *pcur = (char**)(pcur + 1);
+  pcur--;
+  *((int*)pcur) = argc_cnt;
+  pcur--;
 
+  printf("%d\n", (int)((char*)*esp - (char*)pcur));
+  hex_dump(0, pcur, (char*)*esp - (char*)pcur, 1);
+
+
+
+
+  *esp = pcur;
   /* Start address. */
   *eip = (void (*) (void)) ehdr.e_entry;
 
