@@ -88,10 +88,11 @@ start_process (void *file_name_)
 int
 process_wait (tid_t child_tid UNUSED) 
 {
+  int64_t i;
   for (;;) {
     asm volatile("nop");
   }
-  return -1;
+  return 0;
 }
 
 /* Free the current process's resources. */

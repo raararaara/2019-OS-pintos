@@ -48,15 +48,27 @@ syscall_handler (struct intr_frame *f)
     break;
   }
   case  SYS_READ: {                   /* Read from a file. */
+    unsigned size = *(unsigned*)((char*)f->esp + 12);
+    char *buffer = *(void**)((char*)f->esp + 8);
+    int fd = *(int*)((char*)f->esp + 4);   
+    unsigned i;
+    for (i = 0; i < size; ++i) {
+      buffer[i] = input_getc();
+    }
+    f->eax = size;
     break;
   }
   case  SYS_WRITE: {                 /* Write to a file. */
     unsigned size = *(unsigned*)((char*)f->esp + 12);
     const void *buffer = *(const void**)((char*)f->esp + 8);
     int fd = *(int*)((char*)f->esp + 4);
+    /* TODO: buffer address validation */
     if (fd == 1) {
       putbuf(buffer, size);
       f->eax = size;
+    }
+    else {
+      f->eax = 0;
     }
     break;
   }
