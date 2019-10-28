@@ -57,7 +57,6 @@ syscall_handler (struct intr_frame *f)
     unsigned size = *(unsigned*)((char*)f->esp + 12);
     char *buffer = *(void**)((char*)f->esp + 8);
     int fd = *(int*)((char*)f->esp + 4);   
-    printf("%d\n", size);
     if (fd == 0) {
       unsigned i;
       for (i = 0; i < size; ++i) {
