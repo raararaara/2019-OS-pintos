@@ -96,16 +96,18 @@ process_wait (tid_t child_tid)
         e != list_end(list);
         e = list_next(e)) {
     struct thread* t = list_entry(e, struct thread, child_elem);
+	int ret;
     if (t->tid == child_tid) {
+		ret = t->ret_stat;
       while (!t->is_done) {
         thread_yield();
       }
       list_remove(e);
       sema_up(&t->sema); 
-      return 0;
+      return ret;
     }
   }
-  return 0;
+  return -1;
 }
 
 /* Free the current process's resources. */

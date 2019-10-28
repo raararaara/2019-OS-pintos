@@ -26,6 +26,7 @@ syscall_handler (struct intr_frame *f)
   case  SYS_EXIT: {                   /* Terminate this process. */
     struct thread* cur = thread_current();
     cur->is_done = true;
+	cur->ret_stat = *((int*)f->esp + 1);
     sema_down(&cur->sema);
     thread_exit();
     break;
@@ -38,7 +39,7 @@ syscall_handler (struct intr_frame *f)
   }
   case  SYS_WAIT: {                   /* Wait for a child process to die. */
     tid_t tid = *(tid_t*)((char*)f->esp + 4);
-	  process_wait(tid);
+	f->eax = process_wait(tid);
     break;
   }
   case  SYS_CREATE: {                 /* Create a file. */

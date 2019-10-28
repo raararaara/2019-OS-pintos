@@ -103,6 +103,7 @@ struct thread
     struct list_elem child_elem;
 
     bool is_done;
+	int ret_stat;
     struct semaphore sema;
 
     /* Owned by thread.c. */
