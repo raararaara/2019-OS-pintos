@@ -61,9 +61,12 @@ syscall_handler (struct intr_frame *f)
     if (fd == 0) {
       unsigned i;
       for (i = 0; i < size; ++i) {
-        buffer[i] = input_getc();
+        //buffer[i] = input_getc();
       }
       f->eax = size;
+    }
+    else {
+      f->eax = 0;
     }
     break;
   }

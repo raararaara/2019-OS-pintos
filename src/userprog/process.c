@@ -232,8 +232,6 @@ load (const char *file_name, void (**eip) (void), void **esp)
   bool success = false;
   int i;
 
-  //printf("file_name: %s\n", file_name);
-
   /* Allocate and activate page directory. */
   t->pagedir = pagedir_create ();
   if (t->pagedir == NULL) 
@@ -241,10 +239,10 @@ load (const char *file_name, void (**eip) (void), void **esp)
   process_activate ();
 
   /* Open executable file. */
-  char str[128];
-  int idx = 0;
-  for(i = 0; file_name[i] != ' '; i++)
-	  str[idx++] = file_name[i];
+  char str[128] = {0};
+  for(i = 0; file_name[i] && file_name[i] != ' '; ++i) {
+    str[i] = file_name[i];
+  }
   file = filesys_open (str);
   if (file == NULL) 
     {
