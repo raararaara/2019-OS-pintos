@@ -32,14 +32,14 @@ syscall_handler (struct intr_frame *f)
     break;
   }
   case  SYS_EXEC: {                   /* Start another process. */
-    const char* cmd_line = (char *)((int *)f->esp + 1);
+    const char* cmd_line = *(char **)((int *)f->esp + 1);
     /* TODO: cmd_line address validation */
-    process_execute(cmd_line);
+    f->eax = process_execute(cmd_line);
     break;
   }
   case  SYS_WAIT: {                   /* Wait for a child process to die. */
     tid_t tid = *(tid_t*)((char*)f->esp + 4);
-	f->eax = process_wait(tid);
+	  f->eax = process_wait(tid);
     break;
   }
   case  SYS_CREATE: {                 /* Create a file. */

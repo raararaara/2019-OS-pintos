@@ -242,9 +242,11 @@ load (const char *file_name, void (**eip) (void), void **esp)
 
   /* Open executable file. */
   char str[128] = {0};
+  printf("file_name: %s\n", file_name);
   for(i = 0; file_name[i] && file_name[i] != ' '; ++i) {
     str[i] = file_name[i];
   }
+  printf("str: %s\n", str);
   file = filesys_open (str);
   if (file == NULL) 
     {
