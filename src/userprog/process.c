@@ -98,10 +98,10 @@ process_wait (tid_t child_tid)
     struct thread* t = list_entry(e, struct thread, child_elem);
 	int ret;
     if (t->tid == child_tid) {
-		ret = t->ret_stat;
       while (!t->is_done) {
         thread_yield();
       }
+		  ret = t->ret_stat;
       list_remove(e);
       sema_up(&t->sema); 
       return ret;

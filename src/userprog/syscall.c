@@ -26,7 +26,7 @@ syscall_handler (struct intr_frame *f)
   case  SYS_EXIT: {                   /* Terminate this process. */
     struct thread* cur = thread_current();
     cur->is_done = true;
-	cur->ret_stat = *((int*)f->esp + 1);
+    cur->ret_stat = *((int*)f->esp + 1);
     sema_down(&cur->sema);
     thread_exit();
     break;
