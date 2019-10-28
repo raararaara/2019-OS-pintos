@@ -204,6 +204,9 @@ thread_create (const char *name, int priority,
   sf->eip = switch_entry;
   sf->ebp = 0;
 
+  struct thread* cur = thread_current();
+  list_push_back(&cur->child_list, &t->child_elem);
+
   intr_set_level (old_level);
 
   /* Add to run queue. */
@@ -470,6 +473,10 @@ init_thread (struct thread *t, const char *name, int priority)
   t->priority = priority;
   t->magic = THREAD_MAGIC;
   list_push_back (&all_list, &t->allelem);
+
+  list_init(&t->child_list);
+  t->is_done = false;
+  sema_init(&t->sema, 0);
 }
 
 /* Allocates a SIZE-byte frame at the top of thread T's stack and
