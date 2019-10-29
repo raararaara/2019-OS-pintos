@@ -96,12 +96,12 @@ process_wait (tid_t child_tid)
         e != list_end(list);
         e = list_next(e)) {
     struct thread* t = list_entry(e, struct thread, child_elem);
-	int ret;
+    int ret;
     if (t->tid == child_tid) {
       while (!t->is_done) {
         thread_yield();
       }
-		  ret = t->ret_stat;
+      ret = t->ret_stat;
       list_remove(e);
       sema_up(&t->sema); 
       return ret;
@@ -242,11 +242,9 @@ load (const char *file_name, void (**eip) (void), void **esp)
 
   /* Open executable file. */
   char str[128] = {0};
-  printf("file_name: %s\n", file_name);
   for(i = 0; file_name[i] && file_name[i] != ' '; ++i) {
     str[i] = file_name[i];
   }
-  printf("str: %s\n", str);
   file = filesys_open (str);
   if (file == NULL) 
     {
@@ -338,15 +336,15 @@ load (const char *file_name, void (**eip) (void), void **esp)
   
   //parse
   while(sz--){
-	  *cur = file_name[sz];
-	  if(*cur == ' ') {
-		  argc_cnt++;
-		  *pcur = cur+1;
-		  //printf("%p(current addr of argv[])\n", *pcur);
-		  pcur--;
-		  *cur = 0;
-	  }
-	  cur--;
+    *cur = file_name[sz];
+    if(*cur == ' ') {
+      argc_cnt++;
+      *pcur = cur+1;
+      //printf("%p(current addr of argv[])\n", *pcur);
+      pcur--;
+      *cur = 0;
+    }
+    cur--;
   }
   *pcur = cur + 1;
   //printf("%p(current addr of argv[])\n", *pcur);
