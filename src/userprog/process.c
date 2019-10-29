@@ -63,8 +63,9 @@ start_process (void *file_name_)
 
   /* If load failed, quit. */
   palloc_free_page (file_name);
-  if (!success) 
+  if (!success) {
     thread_exit ();
+  }
 
   /* Start the user process by simulating a return from an
      interrupt, implemented by intr_exit (in
@@ -101,8 +102,8 @@ process_wait (tid_t child_tid)
       while (!t->is_done) {
         thread_yield();
       }
+      list_remove(&t->child_elem);
       ret = t->ret_stat;
-      list_remove(e);
       sema_up(&t->sema); 
       return ret;
     }
@@ -241,6 +242,9 @@ load (const char *file_name, void (**eip) (void), void **esp)
   process_activate ();
 
   /* Open executable file. */
+  while (*file_name && *file_name == ' ') {
+    file_name++;
+  }
   char str[128] = {0};
   for(i = 0; file_name[i] && file_name[i] != ' '; ++i) {
     str[i] = file_name[i];
@@ -327,39 +331,44 @@ load (const char *file_name, void (**eip) (void), void **esp)
   if (!setup_stack (esp))
     goto done;
 
-  char* cur = *esp-1;
+  char* cur = *esp - 1;
   //file_name to argv
-  int sz = strlen(file_name) + 1, argc_cnt = 1;
+  int sz = strlen(file_name) + 1, argc_cnt = 0;
   char** pcur = (char**)(((uintptr_t)cur - sz) / 4 * 4);
-  //printf("pcur = %p(start addr of argv[])\n", pcur);
   pcur -= 2;
   
-  //parse
-  while(sz--){
+  // Parse
+  bool was_space = true;
+  while (sz--) {
     *cur = file_name[sz];
-    if(*cur == ' ') {
-      argc_cnt++;
-      *pcur = cur+1;
-      //printf("%p(current addr of argv[])\n", *pcur);
-      pcur--;
+    if (*cur == ' ') {
+      if (!was_space) {
+        argc_cnt++;
+        *pcur = cur + 1;
+        pcur--;
+      }
+      was_space = true;
       *cur = 0;
+    }
+    else {
+      was_space = false;
     }
     cur--;
   }
-  *pcur = cur + 1;
-  //printf("%p(current addr of argv[])\n", *pcur);
-  
-  pcur--;
+  if (!was_space) {
+    argc_cnt++;
+    *pcur = cur + 1; 
+    pcur--;
+  }
+
   *pcur = (char*)(pcur + 1);
   pcur--;
+
   *((int*)pcur) = argc_cnt;
   pcur--;
 
   //printf("%d\n", (int)((char*)*esp - (char*)pcur));
   //hex_dump(0, pcur, (char*)*esp - (char*)pcur, 1);
-
-
-
 
   *esp = pcur;
   /* Start address. */
