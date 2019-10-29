@@ -102,9 +102,11 @@ struct thread
     struct list child_list;
     struct list_elem child_elem;
 
+    bool is_initialized;
     bool is_done;
 	int ret_stat;
     struct semaphore sema;
+    struct semaphore init_sema;
 
     /* Owned by thread.c. */
     unsigned magic;                     /* Detects stack overflow. */

@@ -476,7 +476,9 @@ init_thread (struct thread *t, const char *name, int priority)
 
   list_init(&t->child_list);
   t->is_done = false;
+  t->is_initialized = false;
   sema_init(&t->sema, 0);
+  sema_init(&t->init_sema, 0);
 }
 
 /* Allocates a SIZE-byte frame at the top of thread T's stack and

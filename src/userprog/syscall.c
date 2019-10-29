@@ -7,6 +7,7 @@
 #include "userprog/process.h"
 #include "devices/input.h"
 #include "threads/vaddr.h"
+#include <string.h>
 
 static void syscall_handler (struct intr_frame *);
 

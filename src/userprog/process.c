@@ -42,6 +42,22 @@ process_execute (const char *file_name)
   tid = thread_create (file_name, PRI_DEFAULT, start_process, fn_copy);
   if (tid == TID_ERROR)
     palloc_free_page (fn_copy); 
+
+  struct thread* cur = thread_current();
+  struct list *list = &cur->child_list;
+  struct list_elem* e;
+  for (e = list_begin(list);
+        e != list_end(list);
+        e = list_next(e)) {
+    struct thread* t = list_entry(e, struct thread, child_elem);
+    if (t->tid == tid) {
+      sema_down(&t->init_sema);
+      if (!t->is_initialized) {
+        return TID_ERROR;
+      }
+    }
+  } 
+
   return tid;
 }
 
@@ -66,6 +82,9 @@ start_process (void *file_name_)
   if (!success) {
     thread_exit ();
   }
+
+  thread_current()->is_initialized = true;
+  sema_up(&thread_current()->init_sema);
 
   /* Start the user process by simulating a return from an
      interrupt, implemented by intr_exit (in
@@ -134,6 +153,14 @@ process_exit (void)
       pagedir_activate (NULL);
       pagedir_destroy (pd);
     }
+
+  sema_up(&cur->init_sema);
+
+  if (!cur->is_done) {
+    cur->ret_stat = -1;
+    cur->is_done = true;
+    sema_down(&cur->sema);
+  }
 }
 
 /* Sets up the CPU for running user code in the current
