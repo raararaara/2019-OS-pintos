@@ -94,17 +94,17 @@ syscall_handler (struct intr_frame *f)
     break;
   }
   case  SYS_FIBO: {
-	int N = *(int*)((char*)f->esp+4), cur = 1, prev = 0, tmp;
-	while(N--){
-		tmp = cur;
-		cur += prev;
-		prev = tmp;
-	}
-	f->eax = cur;
-	break;
+    int N = *(int*)((char*)f->esp+4), cur = 1, prev = 0, tmp;
+    while(N--){
+      tmp = cur;
+      cur += prev;
+      prev = tmp;
+    }
+    f->eax = cur;
+    break;
   }
   case  SYS_SUMOF4: {
-	f->eax = *(int*)((char*)f->esp+16) + *(int*)((char*)f->esp+12) + *(int*)((char*)f->esp+8) + (int*)((char*)f->esp+4);
+    f->eax = *(int*)((char*)f->esp+16) + *(int*)((char*)f->esp+12) + *(int*)((char*)f->esp+8) + (int*)((char*)f->esp+4);
   }
   }
 }
