@@ -332,7 +332,7 @@ load (const char *file_name, void (**eip) (void), void **esp)
   char* cur = *esp-1;
   //file_name to argv
   int sz = strlen(file_name) + 1, argc_cnt = 1;
-  char** pcur = ((uintptr_t)cur - sz) / 4 * 4;
+  char** pcur = (char**)(((uintptr_t)cur - sz) / 4 * 4);
   //printf("pcur = %p(start addr of argv[])\n", pcur);
   pcur -= 2;
   
@@ -352,7 +352,7 @@ load (const char *file_name, void (**eip) (void), void **esp)
   //printf("%p(current addr of argv[])\n", *pcur);
   
   pcur--;
-  *pcur = (char**)(pcur + 1);
+  *pcur = (char*)(pcur + 1);
   pcur--;
   *((int*)pcur) = argc_cnt;
   pcur--;
