@@ -50,11 +50,25 @@ static bool check_range(const uint8_t* begin, const uint8_t* end) {
   return false;
 }
 
+static void sys_exit(int status) {
+  struct thread* cur = thread_current();
+  char* saveptr = NULL;
+
+  cur->is_done = true;
+  cur->ret_stat = status;
+
+  strtok_r(cur->name, " ", &saveptr);
+  printf ("%s: exit(%d)\n", cur->name, cur->ret_stat); 
+
+  sema_down(&cur->sema);
+  thread_exit(); 
+}
+
 static void
 syscall_handler (struct intr_frame *f) 
 {
   if (!check_range(f->esp, f->esp + 4)) {
-    return;
+    goto fatal;
   }
   switch (*(int*)f->esp) {
   case  SYS_HALT: {                   /* Halt the operating system. */
@@ -63,27 +77,16 @@ syscall_handler (struct intr_frame *f)
   }
 
   case  SYS_EXIT: {                   /* Terminate this process. */
-    struct thread* cur = thread_current();
-    char* saveptr = NULL;
-
-    cur->is_done = true;
-    cur->ret_stat = *((int*)f->esp + 1);
-  
     if (!check_range(f->esp, f->esp + 8)) {
-      return;
+      goto fatal;
     }
-
-    strtok_r(cur->name, " ", &saveptr);
-    printf ("%s: exit(%d)\n", cur->name, cur->ret_stat); 
-
-    sema_down(&cur->sema);
-    thread_exit();
+    sys_exit(*((int *)f->esp + 1));
     break;
   }
 
   case  SYS_EXEC: {                   /* Start another process. */
     if (!check_range(f->esp, f->esp + 8)) {
-      return;
+      goto fatal;
     }
     const char* cmd_line = *(char **)((int *)f->esp + 1);
     const char* p = cmd_line;
@@ -110,7 +113,7 @@ syscall_handler (struct intr_frame *f)
 
   case  SYS_WAIT: {                   /* Wait for a child process to die. */
     if (!check_range(f->esp, f->esp + 8)) {
-      return;
+      goto fatal;
     }
     tid_t tid = *(tid_t*)((char*)f->esp + 4);
 	  f->eax = process_wait(tid);
@@ -135,7 +138,7 @@ syscall_handler (struct intr_frame *f)
 
   case  SYS_READ: {                   /* Read from a file. */
     if (!check_range(f->esp, f->esp + 16)) {
-      return;
+      goto fatal;
     }
     unsigned size = *(unsigned*)((char*)f->esp + 12);
     char *buffer = *(void**)((char*)f->esp + 8);
@@ -161,7 +164,7 @@ syscall_handler (struct intr_frame *f)
 
   case  SYS_WRITE: {                 /* Write to a file. */
     if (!check_range(f->esp, f->esp + 16)) {
-      return;
+      goto fatal;
     }
     unsigned size = *(unsigned*)((char*)f->esp + 12);
     const void *buffer = *(const void**)((char*)f->esp + 8);
@@ -192,4 +195,8 @@ syscall_handler (struct intr_frame *f)
     break;
   }
   }
+
+  return;
+fatal:
+  sys_exit(-1);
 }
