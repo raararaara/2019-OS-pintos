@@ -195,7 +195,26 @@ syscall_handler (struct intr_frame *f)
   case  SYS_CLOSE: {                  /* Close a file. */
     break;
   }
+  case  SYS_FIBO:  {
+	if(!is_user_vaddr(f->esp+4)) goto fatal;
+	int cur = 1, prev = 0, tmp, cnt = *(int*)(f->esp + 4)-1;
+	while(cnt--){
+		tmp = cur;
+		cur += prev;
+		prev = tmp;
+	}
+	f->eax = cur; break;
   }
+  case  SYS_SUM:  {
+	if(!is_user_vaddr(f->esp+16)) goto fatal;
+	int i, sum = 0;
+
+	for(i = 4; i<= 16; i+= 4)
+		sum += *(int*)(f->esp+i);
+    f->eax = sum; break;
+  }
+  }
+
 
   return;
 fatal:
