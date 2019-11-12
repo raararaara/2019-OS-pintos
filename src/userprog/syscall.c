@@ -117,7 +117,7 @@ syscall_handler (struct intr_frame *f)
       goto fatal;
     }
     tid_t tid = *(tid_t*)((char*)f->esp + 4);
-	  f->eax = process_wait(tid);
+    f->eax = process_wait(tid);
     break;
   }
 
@@ -134,30 +134,34 @@ syscall_handler (struct intr_frame *f)
       goto fatal;
     }
     const char* filename = *(char **)((int *)f->esp + 1);
-    const char* p = cmd_line;
+    const char* p = filename;
     bool memory_error = false;
     while (is_user_vaddr(p)) {
       int byte = get_user((uint8_t*)p);
       if (byte == -1) {
-        memory_error = true;
-        break;
+        goto fatal;
       }
       if (byte == 0) {
         break;
       }
       ++p;
     }
-    if (memory_error) {
-      goto fatal;
-    }
+    
+    struct thread* cur = thread_current();
+    int i;
+    for (i = 0; i < 128; ++i) {
+      if (cur->open_files[i] == 0) {
+        struct file* fp = filesys_open(filename);
+        if (!fp) {
+          f->eax = -1;
+          break;
+        }
+        
+        cur->open_files[i] = fp;
+        f->eax = i + 3;
 
-    struct file* fp = filesys_open(filename);
-    if (!fp) {
-      f->eax = -1;
-    }
-    else {
-      f->eax = (int)fp;
-
+        break;
+      }
     }
 
     break;
@@ -187,9 +191,9 @@ syscall_handler (struct intr_frame *f)
       }
       f->eax = i;
     }
-	else if(fd > 2) {
-		f->eax = file_read(thread_current()->open_files[fd], buffer, size);
-	}
+    else if(fd > 2 && fd < 128 + 3) {
+      f->eax = file_read(thread_current()->open_files[fd - 3], buffer, size);
+    }
     else {
       f->eax = -1;
     }
@@ -211,9 +215,9 @@ syscall_handler (struct intr_frame *f)
       putbuf(buffer, size);
       f->eax = size;
     }
-	else if(fd > 2) {
-		f->eax = file_write(thread_current()->open_files[fd], buffer, size);
-	}
+    else if(fd > 2 && fd < 128 + 3) {
+      f->eax = file_write(thread_current()->open_files[fd - 3], buffer, size);
+    }
     else {
       f->eax = -1;
     }
@@ -221,50 +225,64 @@ syscall_handler (struct intr_frame *f)
   }
 
   case  SYS_SEEK: {                   /* Change position in a file. */
-    if (!check_range(f->esp, f->esp + 8)) {
+    if (!check_range(f->esp, f->esp + 12)) {
       goto fatal;
     }
-	unsigned size = *(unsigned*)((char*)f->esp + 8);
+    unsigned size = *(unsigned*)((char*)f->esp + 8);
     int fd = *(int*)((char*)f->esp + 4);
-	file_seek(thread_current()->open_files[fd], size);
+    if (fd > 2 && fd < 128 + 3) {
+      file_seek(thread_current()->open_files[fd - 3], size);
+    }
+    else {
+      goto fatal;
+    }
     break;
   }
 
   case  SYS_TELL: {                   /* Report current position in a file. */
-    if (!check_range(f->esp, f->esp + 4)) {
+    if (!check_range(f->esp, f->esp + 8)) {
       goto fatal;
     }
     int fd = *(int*)((char*)f->esp + 4);
-	file_tell((thread_current()->open_files[fd]);
+    if (fd > 2 && fd < 128 + 3) {
+      file_tell((thread_current()->open_files[fd]);
+    }
+    else {
+      goto fatal;
+    }
     break;
   }
 
   case  SYS_CLOSE: {                  /* Close a file. */
-    if (!check_range(f->esp, f->esp + 4)) {
+    if (!check_range(f->esp, f->esp + 8)) {
       goto fatal;
     }
     int fd = *(int*)((char*)f->esp + 4);
-	file_close(thread_current()->open_files[fd]);
+    if (fd > 2 && fd < 128 + 3) {
+      file_close(thread_current()->open_files[fd]);
+    }
     break;
   }
-  case  SYS_FIBO:  {
-	if(!is_user_vaddr(f->esp+4)) goto fatal;
-	int cur = 1, prev = 0, tmp, cnt = *(int*)(f->esp + 4)-1;
-	while(cnt--){
-		tmp = cur;
-		cur += prev;
-		prev = tmp;
-	}
-	f->eax = cur; break;
-  }
-  case  SYS_SUM:  {
-	if(!is_user_vaddr(f->esp+16)) goto fatal;
-	int i, sum = 0;
 
-	for(i = 4; i<= 16; i+= 4)
-		sum += *(int*)(f->esp+i);
-    f->eax = sum; break;
-  }
+  case  SYS_FIBO:  {
+    if(!is_user_vaddr(f->esp+4)) goto fatal;
+    int cur = 1, prev = 0, tmp, cnt = *(int*)(f->esp + 4)-1;
+    while(cnt--){
+      tmp = cur;
+      cur += prev;
+      prev = tmp;
+    }
+    f->eax = cur; break;
+    }
+
+  case  SYS_SUM:  {
+    if(!is_user_vaddr(f->esp+16)) goto fatal;
+    int i, sum = 0;
+
+    for(i = 4; i<= 16; i+= 4)
+      sum += *(int*)(f->esp+i);
+      f->eax = sum; break;
+    }
   }
 
 
