@@ -131,7 +131,7 @@ syscall_handler (struct intr_frame *f)
 	}
     unsigned size = *(unsigned*)((char*)f->esp + 8);
     char *filename = *(void**)((char*)f->esp + 4);
-	if (strlen(filename) > 14) {
+    if (!check_user_string(filename) || strlen(filename) > 14) {
 		goto fatal;
 	}
 	f->eax = filesys_create(filename, size);
