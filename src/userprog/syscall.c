@@ -51,6 +51,23 @@ static bool check_range(const uint8_t* begin, const uint8_t* end) {
   return false;
 }
 
+static bool check_user_string(const char* str) {
+    const char* p = str;
+    bool memory_error = false;
+    while (is_user_vaddr(p)) {
+      int byte = get_user((uint8_t*)p);
+      if (byte == -1) {
+        memory_error = true;
+        break;
+      }
+      if (byte == 0) {
+        break;
+      }
+      ++p;
+    }
+    return !memory_error;
+}
+
 static void sys_exit(int status) {
   struct thread* cur = thread_current();
   char* saveptr = NULL;
@@ -89,21 +106,8 @@ syscall_handler (struct intr_frame *f)
     if (!check_range(f->esp, f->esp + 8)) {
       goto fatal;
     }
-    const char* cmd_line = *(char **)((int *)f->esp + 1);
-    const char* p = cmd_line;
-    bool memory_error = false;
-    while (is_user_vaddr(p)) {
-      int byte = get_user((uint8_t*)p);
-      if (byte == -1) {
-        memory_error = true;
-        break;
-      }
-      if (byte == 0) {
-        break;
-      }
-      ++p;
-    }
-    if (!memory_error) {
+    const char* cmd_line = *(char **)((int *)f->esp + 1); 
+    if (check_user_string(cmd_line)) {
       f->eax = process_execute(cmd_line);
     }
     else {
@@ -139,18 +143,10 @@ syscall_handler (struct intr_frame *f)
       goto fatal;
     }
     const char* filename = *(char **)((int *)f->esp + 1);
-    const char* p = filename;
-    bool memory_error = false;
-    while (is_user_vaddr(p)) {
-      int byte = get_user((uint8_t*)p);
-      if (byte == -1) {
-        goto fatal;
-      }
-      if (byte == 0) {
-        break;
-      }
-      ++p;
-    }
+    if (!check_user_string(filename)) {
+      f->eax = -1;
+      break;
+    } 
     
     struct thread* cur = thread_current();
     int i;
@@ -167,6 +163,12 @@ syscall_handler (struct intr_frame *f)
 
         break;
       }
+    }
+
+    // more than 128 files opened
+    if (i == 128) {
+      f->eax = -1;
+      break;
     }
 
     break;
@@ -207,6 +209,10 @@ syscall_handler (struct intr_frame *f)
       f->eax = i;
     }
     else if(fd > 2 && fd < 128 + 3) {
+      if (thread_current()->open_files[fd - 3] == 0) {
+        f->eax = -1;
+        break;
+      }
       f->eax = file_read(thread_current()->open_files[fd - 3], buffer, size);
     }
     else {
@@ -231,6 +237,10 @@ syscall_handler (struct intr_frame *f)
       f->eax = size;
     }
     else if(fd > 2 && fd < 128 + 3) {
+      if (thread_current()->open_files[fd - 3] == 0) {
+        f->eax = -1;
+        break;
+      }
       f->eax = file_write(thread_current()->open_files[fd - 3], buffer, size);
     }
     else {
@@ -246,6 +256,9 @@ syscall_handler (struct intr_frame *f)
     unsigned size = *(unsigned*)((char*)f->esp + 8);
     int fd = *(int*)((char*)f->esp + 4);
     if (fd > 2 && fd < 128 + 3) {
+      if (thread_current()->open_files[fd - 3] == 0) {
+        goto fatal;
+      }
       file_seek(thread_current()->open_files[fd - 3], size);
     }
     else {
@@ -260,6 +273,9 @@ syscall_handler (struct intr_frame *f)
     }
     int fd = *(int*)((char*)f->esp + 4);
     if (fd > 2 && fd < 128 + 3) {
+      if (thread_current()->open_files[fd - 3] == 0) {
+        goto fatal;
+      }
       file_tell((thread_current()->open_files[fd - 3]);
     }
     else {
