@@ -129,12 +129,24 @@ syscall_handler (struct intr_frame *f)
 	if (!check_range(f->esp, f->esp + 12)){
 		goto fatal;
 	}
-	const char* filename = *(char **)((int*)f->esp + 1);
-	const
+    unsigned size = *(unsigned*)((char*)f->esp + 8);
+    char *filename = *(void**)((char*)f->esp + 4);
+	if(strlen(filename > 14)) {
+		goto fatal;
+	}
+	f->eax = filesys_create(filename, size);
     break;
   }
 
   case  SYS_REMOVE: {                 /* Delete a file. */
+	if (!check_range(f->esp, f->esp + 8)){
+		goto fatal;
+	}
+    char *filename = *(void**)((char*)f->esp + 4);
+	if(strlen(filename > 14)) {
+		goto fatal;
+	}
+	f->eax = filesys_remove(filename);
     break;
   }
 
