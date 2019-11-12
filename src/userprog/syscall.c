@@ -77,6 +77,13 @@ void sys_exit(int status) {
   struct thread* cur = thread_current();
   char* saveptr = NULL;
 
+  int i;
+  for (i = 0; i < 128; ++i) {
+    if (cur->open_files[i] != 0) {
+      file_close(cur->open_files[i]);
+    }
+  }
+
   cur->is_done = true;
   cur->ret_stat = status;
 
