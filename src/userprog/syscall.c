@@ -167,7 +167,7 @@ syscall_handler (struct intr_frame *f)
     const char* filename = *(char **)((int *)f->esp + 1);
 
     if (!check_user_string(filename)) {
-      goto fatal;
+		goto fatal;
     } 
     
     struct thread* cur = thread_current();
@@ -222,8 +222,7 @@ syscall_handler (struct intr_frame *f)
     int fd = *(int*)((char*)f->esp + 4);   
 
     if (!check_range((uint8_t*)buffer, (uint8_t*)buffer + size)) {
-      f->eax = -1;
-      break;
+		goto fatal;
     }
     if (fd == 0) {
       unsigned i; 
@@ -257,8 +256,7 @@ syscall_handler (struct intr_frame *f)
     int fd = *(int*)((char*)f->esp + 4);
 
     if (!check_range(buffer, buffer + size)) {
-      f->eax = -1;
-      break;
+		goto fatal;
     }
     if (fd == 1) {
       putbuf(buffer, size);
