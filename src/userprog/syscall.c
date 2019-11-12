@@ -130,6 +130,36 @@ syscall_handler (struct intr_frame *f)
   }
 
   case  SYS_OPEN: {                  /* Open a file. */
+    if (!check_range(f->esp, f->esp + 8)) {
+      goto fatal;
+    }
+    const char* filename = *(char **)((int *)f->esp + 1);
+    const char* p = cmd_line;
+    bool memory_error = false;
+    while (is_user_vaddr(p)) {
+      int byte = get_user((uint8_t*)p);
+      if (byte == -1) {
+        memory_error = true;
+        break;
+      }
+      if (byte == 0) {
+        break;
+      }
+      ++p;
+    }
+    if (memory_error) {
+      goto fatal;
+    }
+
+    struct file* fp = filesys_open(filename);
+    if (!fp) {
+      f->eax = -1;
+    }
+    else {
+      f->eax = (int)fp;
+
+    }
+
     break;
   }
 

@@ -108,6 +108,8 @@ struct thread
     struct semaphore sema;
     struct semaphore init_sema;
 
+    void* open_files[128];
+
     /* Owned by thread.c. */
     unsigned magic;                     /* Detects stack overflow. */
   };
