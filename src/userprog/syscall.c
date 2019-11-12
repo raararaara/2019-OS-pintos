@@ -73,7 +73,7 @@ static bool check_user_string(const char* str) {
     return !memory_error;
 }
 
-static void sys_exit(int status) {
+void sys_exit(int status) {
   struct thread* cur = thread_current();
   char* saveptr = NULL;
 
