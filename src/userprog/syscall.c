@@ -7,6 +7,8 @@
 #include "userprog/process.h"
 #include "devices/input.h"
 #include "threads/vaddr.h"
+#include "filesys/filesys.h"
+#include "filesys/file.h"
 #include <string.h>
 
 static void syscall_handler (struct intr_frame *);
@@ -54,6 +56,9 @@ static bool check_range(const uint8_t* begin, const uint8_t* end) {
 static bool check_user_string(const char* str) {
     const char* p = str;
     bool memory_error = false;
+    if (str == NULL) {
+      return false;
+    }
     while (is_user_vaddr(p)) {
       int byte = get_user((uint8_t*)p);
       if (byte == -1) {
