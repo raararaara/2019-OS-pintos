@@ -131,7 +131,7 @@ syscall_handler (struct intr_frame *f)
 	}
     unsigned size = *(unsigned*)((char*)f->esp + 8);
     char *filename = *(void**)((char*)f->esp + 4);
-	if(strlen(filename > 14)) {
+	if (strlen(filename) > 14) {
 		goto fatal;
 	}
 	f->eax = filesys_create(filename, size);
@@ -143,7 +143,7 @@ syscall_handler (struct intr_frame *f)
 		goto fatal;
 	}
     char *filename = *(void**)((char*)f->esp + 4);
-	if(strlen(filename > 14)) {
+	if(strlen(filename) > 14) {
 		goto fatal;
 	}
 	f->eax = filesys_remove(filename);
@@ -196,7 +196,7 @@ syscall_handler (struct intr_frame *f)
     int fd = *(int*)((char*)f->esp + 4);
 
     if (fd > 2 && fd < 128 + 3) {
-      f->eax = file_length((thread_current()->open_files[fd - 3]);
+      f->eax = file_length(thread_current()->open_files[fd - 3]);
     }
     else {
       goto fatal;
@@ -300,7 +300,7 @@ syscall_handler (struct intr_frame *f)
       if (thread_current()->open_files[fd - 3] == 0) {
         goto fatal;
       }
-      file_tell((thread_current()->open_files[fd - 3]);
+      file_tell(thread_current()->open_files[fd - 3]);
     }
     else {
       goto fatal;
