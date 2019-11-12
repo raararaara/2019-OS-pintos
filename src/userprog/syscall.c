@@ -157,6 +157,9 @@ syscall_handler (struct intr_frame *f)
       }
       f->eax = i;
     }
+	else if(fd > 2) {
+		f->eax = file_read(thread_current()->open_files[fd], buffer, size);
+	}
     else {
       f->eax = -1;
     }
@@ -178,6 +181,9 @@ syscall_handler (struct intr_frame *f)
       putbuf(buffer, size);
       f->eax = size;
     }
+	else if(fd > 2) {
+		f->eax = file_write(thread_current()->open_files[fd], buffer, size);
+	}
     else {
       f->eax = -1;
     }
@@ -185,14 +191,30 @@ syscall_handler (struct intr_frame *f)
   }
 
   case  SYS_SEEK: {                   /* Change position in a file. */
+    if (!check_range(f->esp, f->esp + 8)) {
+      goto fatal;
+    }
+	unsigned size = *(unsigned*)((char*)f->esp + 8);
+    int fd = *(int*)((char*)f->esp + 4);
+	file_seek(thread_current()->open_files[fd], size);
     break;
   }
 
   case  SYS_TELL: {                   /* Report current position in a file. */
+    if (!check_range(f->esp, f->esp + 4)) {
+      goto fatal;
+    }
+    int fd = *(int*)((char*)f->esp + 4);
+	file_tell((thread_current()->open_files[fd]);
     break;
   }
 
   case  SYS_CLOSE: {                  /* Close a file. */
+    if (!check_range(f->esp, f->esp + 4)) {
+      goto fatal;
+    }
+    int fd = *(int*)((char*)f->esp + 4);
+	file_close(thread_current()->open_files[fd]);
     break;
   }
   case  SYS_FIBO:  {
