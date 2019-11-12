@@ -122,6 +122,11 @@ syscall_handler (struct intr_frame *f)
   }
 
   case  SYS_CREATE: {                 /* Create a file. */
+	if (!check_range(f->esp, f->esp + 12)){
+		goto fatal;
+	}
+	const char* filename = *(char **)((int*)f->esp + 1);
+	const
     break;
   }
 
@@ -168,6 +173,16 @@ syscall_handler (struct intr_frame *f)
   }
 
   case  SYS_FILESIZE: {               /* Obtain a file's size. */
+    if (!check_range(f->esp, f->esp + 8)) {
+      goto fatal;
+    }
+    int fd = *(int*)((char*)f->esp + 4);
+    if (fd > 2 && fd < 128 + 3) {
+      f->eax = file_length((thread_current()->open_files[fd - 3]);
+    }
+    else {
+      goto fatal;
+    }
     break;
   }
 
