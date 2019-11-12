@@ -245,7 +245,7 @@ syscall_handler (struct intr_frame *f)
     }
     int fd = *(int*)((char*)f->esp + 4);
     if (fd > 2 && fd < 128 + 3) {
-      file_tell((thread_current()->open_files[fd]);
+      file_tell((thread_current()->open_files[fd - 3]);
     }
     else {
       goto fatal;
@@ -259,7 +259,14 @@ syscall_handler (struct intr_frame *f)
     }
     int fd = *(int*)((char*)f->esp + 4);
     if (fd > 2 && fd < 128 + 3) {
-      file_close(thread_current()->open_files[fd]);
+      if (thread_current()->open_files[fd - 3] == 0) {
+        goto fatal;
+      }
+      file_close(thread_current()->open_files[fd - 3]);
+      thread_current()->open_files[fd - 3] = 0;
+    }
+    else {
+      goto fatal;
     }
     break;
   }
