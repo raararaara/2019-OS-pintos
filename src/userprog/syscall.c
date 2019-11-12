@@ -7,6 +7,8 @@
 #include "userprog/process.h"
 #include "devices/input.h"
 #include "threads/vaddr.h"
+#include "filesys/filesys.h"
+#include "filesys/file.h"
 #include <string.h>
 
 static void syscall_handler (struct intr_frame *);
@@ -54,6 +56,9 @@ static bool check_range(const uint8_t* begin, const uint8_t* end) {
 static bool check_user_string(const char* str) {
     const char* p = str;
     bool memory_error = false;
+    if (str == NULL) {
+      return false;
+    }
     while (is_user_vaddr(p)) {
       int byte = get_user((uint8_t*)p);
       if (byte == -1) {
@@ -151,7 +156,9 @@ syscall_handler (struct intr_frame *f)
     if (!check_range(f->esp, f->esp + 8)) {
       goto fatal;
     }
+
     const char* filename = *(char **)((int *)f->esp + 1);
+
     if (!check_user_string(filename)) {
       f->eax = -1;
       break;
@@ -187,7 +194,9 @@ syscall_handler (struct intr_frame *f)
     if (!check_range(f->esp, f->esp + 8)) {
       goto fatal;
     }
+
     int fd = *(int*)((char*)f->esp + 4);
+
     if (fd > 2 && fd < 128 + 3) {
       f->eax = file_length(thread_current()->open_files[fd - 3]);
     }
@@ -201,9 +210,11 @@ syscall_handler (struct intr_frame *f)
     if (!check_range(f->esp, f->esp + 16)) {
       goto fatal;
     }
+
     unsigned size = *(unsigned*)((char*)f->esp + 12);
     char *buffer = *(void**)((char*)f->esp + 8);
     int fd = *(int*)((char*)f->esp + 4);   
+
     if (!check_range((uint8_t*)buffer, (uint8_t*)buffer + size)) {
       f->eax = -1;
       break;
@@ -234,9 +245,11 @@ syscall_handler (struct intr_frame *f)
     if (!check_range(f->esp, f->esp + 16)) {
       goto fatal;
     }
+
     unsigned size = *(unsigned*)((char*)f->esp + 12);
     const void *buffer = *(const void**)((char*)f->esp + 8);
     int fd = *(int*)((char*)f->esp + 4);
+
     if (!check_range(buffer, buffer + size)) {
       f->eax = -1;
       break;
@@ -262,8 +275,10 @@ syscall_handler (struct intr_frame *f)
     if (!check_range(f->esp, f->esp + 12)) {
       goto fatal;
     }
+
     unsigned size = *(unsigned*)((char*)f->esp + 8);
     int fd = *(int*)((char*)f->esp + 4);
+
     if (fd > 2 && fd < 128 + 3) {
       if (thread_current()->open_files[fd - 3] == 0) {
         goto fatal;
@@ -280,7 +295,9 @@ syscall_handler (struct intr_frame *f)
     if (!check_range(f->esp, f->esp + 8)) {
       goto fatal;
     }
+
     int fd = *(int*)((char*)f->esp + 4);
+
     if (fd > 2 && fd < 128 + 3) {
       if (thread_current()->open_files[fd - 3] == 0) {
         goto fatal;
@@ -297,7 +314,9 @@ syscall_handler (struct intr_frame *f)
     if (!check_range(f->esp, f->esp + 8)) {
       goto fatal;
     }
+
     int fd = *(int*)((char*)f->esp + 4);
+
     if (fd > 2 && fd < 128 + 3) {
       if (thread_current()->open_files[fd - 3] == 0) {
         goto fatal;
@@ -320,7 +339,7 @@ syscall_handler (struct intr_frame *f)
       prev = tmp;
     }
     f->eax = cur; break;
-    }
+  }
 
   case  SYS_SUM:  {
     if(!is_user_vaddr(f->esp+16)) goto fatal;
