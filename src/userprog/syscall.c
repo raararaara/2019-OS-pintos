@@ -179,6 +179,9 @@ syscall_handler (struct intr_frame *f)
           f->eax = -1;
           break;
         }
+        if (strcmp(cur->name, filename) == 0) {
+          file_deny_write(fp);
+        }
         
         cur->open_files[i] = fp;
         f->eax = i + 3;
