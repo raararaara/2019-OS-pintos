@@ -171,7 +171,13 @@ syscall_handler (struct intr_frame *f)
     } 
     
     struct thread* cur = thread_current();
+    char execname[16];
     int i;
+    char* saveptr = NULL;
+     
+    strlcpy(execname, cur->name, 16);
+    strtok_r(execname, " ", &saveptr);
+
     for (i = 0; i < 128; ++i) {
       if (cur->open_files[i] == 0) {
         struct file* fp = filesys_open(filename);
@@ -179,12 +185,13 @@ syscall_handler (struct intr_frame *f)
           f->eax = -1;
           break;
         }
-        if (strcmp(cur->name, filename) == 0) {
-          file_deny_write(fp);
-        }
         
         cur->open_files[i] = fp;
         f->eax = i + 3;
+
+        if (strcmp(execname, filename) == 0) {
+          file_deny_write(fp);
+        }
 
         break;
       }
