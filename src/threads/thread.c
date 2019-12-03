@@ -127,6 +127,16 @@ thread_start (void)
   sema_down (&start_idle);
 }
 
+void thread_aging() {
+  struct thread *cur = thread_current();
+  if (cur->status == THREAD_BLOCKED) {
+    if (cur->priority < PRI_MAX) {
+      cur->priority++;
+      cur->starve_time++;
+    }
+  }
+}
+
 /* Called by the timer interrupt handler at each timer tick.
    Thus, this function runs in an external interrupt context. */
 void
@@ -243,7 +253,10 @@ thread_block (void)
   ASSERT (!intr_context ());
   ASSERT (intr_get_level () == INTR_OFF);
 
-  thread_current ()->status = THREAD_BLOCKED;
+  struct thread* t = thread_current();
+  t->status = THREAD_BLOCKED;
+  t->priority -= t->starve_time;
+  t->starve_time = 0;
   schedule ();
 }
 
