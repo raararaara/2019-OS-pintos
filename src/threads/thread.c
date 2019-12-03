@@ -148,7 +148,7 @@ thread_tick (void)
   if (++thread_ticks >= TIME_SLICE)
     intr_yield_on_return ();
 #ifndef USERPROG
-  thread_wake_up();
+  //thread_wake_up();
   if(thread_prior_aging == true)
 	thread_aging();
 #endif
@@ -226,7 +226,8 @@ thread_create (const char *name, int priority,
 
   /* Add to run queue. */
   thread_unblock (t);
-
+  if(priority > thread_get_priority())
+	thread_yield();
   return tid;
 }
 
@@ -263,7 +264,7 @@ thread_unblock (struct thread *t)
 
   old_level = intr_disable ();
   ASSERT (t->status == THREAD_BLOCKED);
-  list_push_back (&ready_list, &t->elem);
+  list_insert_ordered (&ready_list, &t->elem, priority_cmp, NULL);
   t->status = THREAD_READY;
   intr_set_level (old_level);
 }
