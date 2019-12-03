@@ -7,6 +7,9 @@
 #include "threads/synch.h"
 
 /* States in a thread's life cycle. */
+#ifndef USERPROG
+extern bool thread_prior_aging;
+#endif
 enum thread_status
   {
     THREAD_RUNNING,     /* Running thread. */
