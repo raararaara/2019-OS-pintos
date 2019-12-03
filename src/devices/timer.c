@@ -3,6 +3,7 @@
 #include <inttypes.h>
 #include <round.h>
 #include <stdio.h>
+#include <list.h>
 #include "devices/pit.h"
 #include "threads/interrupt.h"
 #include "threads/synch.h"
@@ -30,11 +31,14 @@ static void busy_wait (int64_t loops);
 static void real_time_sleep (int64_t num, int32_t denom);
 static void real_time_delay (int64_t num, int32_t denom);
 
+static struct list timer_queue;
+
 /* Sets up the timer to interrupt TIMER_FREQ times per second,
    and registers the corresponding interrupt. */
 void
 timer_init (void) 
 {
+  list_init(&timer_queue);
   pit_configure_channel (0, 2, TIMER_FREQ);
   intr_register_ext (0x20, timer_interrupt, "8254 Timer");
 }
@@ -92,8 +96,19 @@ timer_sleep (int64_t ticks)
   int64_t start = timer_ticks ();
 
   ASSERT (intr_get_level () == INTR_ON);
-  while (timer_elapsed (start) < ticks) 
-    thread_yield ();
+  if (timer_elapsed (start) < ticks) {
+    struct thread* cur = thread_current();
+
+    cur->timer_wake_tick = start + ticks;
+
+    // insert thread into timer queue
+    intr_disable();
+    list_push_back(&timer_queue, &cur->timer_elem); 
+
+    // block thread
+    thread_block();
+    intr_set_level(INTR_ON);
+  } 
 }
 
 /* Sleeps for approximately MS milliseconds.  Interrupts must be
@@ -171,6 +186,15 @@ static void
 timer_interrupt (struct intr_frame *args UNUSED)
 {
   ticks++;
+  struct list_elem *e;
+  for (e = list_begin(&timer_queue); e != list_end(&timer_queue);
+      e = list_next(e)) {
+    struct thread* t = list_entry(e, struct thread, timer_elem);
+    if (t->timer_wake_tick <= ticks) {
+      list_remove(e);
+      thread_unblock(t);
+    }
+  }
   thread_tick ();
 }
 
