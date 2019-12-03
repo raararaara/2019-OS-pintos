@@ -97,6 +97,9 @@ struct thread
     /* Shared between thread.c and synch.c. */
     struct list_elem elem;              /* List element. */
 
+    // time spent without occupying the cpu
+    int64_t starve_time;
+
     /* Owned by alarm.c */
     struct list_elem timer_elem;
     int64_t timer_wake_tick;
