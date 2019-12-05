@@ -110,6 +110,7 @@ thread_init (void)
   initial_thread->status = THREAD_RUNNING;
   initial_thread->tid = allocate_tid ();
   initial_thread->nice = 0;
+  initial_thread->recent_cpu = 0;
 }
 
 /* Starts preemptive thread scheduling by enabling interrupts.
@@ -129,17 +130,108 @@ thread_start (void)
   sema_down (&start_idle);
 }
 
-void thread_aging() {
-  struct list_elem* e;
-  for (e = list_begin(&ready_list); e != list_end(&ready_list);
-      e = list_next(e)) {
-    struct thread* t = list_entry(e, struct thread, elem);
-    if (t->priority < PRI_MAX) {
-      t->priority++;
-      t->starve_time++;
-    }
+typedef unsigned int fixed_t;
+static int sign(fixed_t a) {
+  if (a & 0x80000000u) {
+    return -1;
   }
-  list_sort(&ready_list, priority_cmp, NULL);
+  return 1;
+}
+static fixed_t conv(int a) {
+  if (a < 0) {
+    return ((-a) << 14) | 0x80000000u;
+  }
+  return a << 14; 
+}
+static fixed_t getint(fixed_t a) {
+  if (sign(a) < 0) {
+    return -((a & 0x7fffffffu) >> 14);
+  }
+  return a >> 14;
+}
+static fixed_t getfrac(fixed_t a) {
+  int r = a & 0x3fff;
+  return ((r * 10) >> 14) * 10 + ((r * 100) >> 14) % 10;
+}
+static fixed_t add(fixed_t a, fixed_t b) {
+  if (sign(a) > 0 && sign(b) > 0) {
+    return a + b;
+  }
+  if (sign(a) < 0 && sign(b) > 0) {
+    int t = a;
+    a = b;
+    b = t;
+  }
+  if (sign(a) > 0 && sign(b) < 0) {
+     int r = a - (b & 0x7fffffffu);
+     if (r < 0) {
+       r = -r;
+       r |= 0x80000000u;
+     }
+     return r;
+  }
+  a &= 0x7fffffffu;
+  b &= 0x7fffffffu;
+  return (a + b) | 0x80000000u;
+}
+static fixed_t sub(fixed_t a, fixed_t b) {
+  return add(a, b ^ 0x80000000u);
+}
+static fixed_t mul(fixed_t a, fixed_t b) {
+  int sgn = sign(a) * sign(b);
+  a &= 0x7fffffffu; 
+  b &= 0x7fffffffu;
+  uint64_t r = (uint64_t)a * (uint64_t)b;
+  r >>= 14;
+  if (sgn < 0) {
+    r |= 0x80000000u;
+  }
+  return (fixed_t)r;
+}
+static fixed_t div(fixed_t a, fixed_t b) {
+  int sgn = sign(a) * sign(b);
+  a &= 0x7fffffffu; 
+  b &= 0x7fffffffu;
+  fixed_t r = (fixed_t)((((uint64_t)a) << 14) / b);
+  if (sgn < 0) {
+    r |= 0x80000000u;
+  }
+  return r;
+}
+
+void thread_aging() {
+  static int ticks = 0;
+  if (ticks++ % 4 == 0) {
+    struct list_elem* e;
+    for (e = list_begin(&ready_list); e != list_end(&ready_list);
+        e = list_next(e)) {
+      struct thread* t = list_entry(e, struct thread, elem);
+      int nice = t->nice;
+      int recent_cpu = t->recent_cpu;
+      t->priority = get_int(sub(sub(conv(PRI_MAX), div(conv(recent_cpu), conv(4))), mul(conv(nice), conv(2))));
+    }
+    list_sort(&ready_list, priority_cmp, NULL);
+  }
+  if (ticks == 4) {
+    ticks = 0;
+  }
+
+  static int cnt = 0;
+  for (cnt++ % 100 == 0) {
+    struct list_elem* e;
+    for (e = list_begin(&all_list); e != list_end(&all_list);
+        e = list_next(e)) {
+      struct thread* t = list_entry(e, struct thread, allelem);
+      //t->recent_cpu = mul(conv(2), get_)
+    } 
+  }
+  if (cnt == 100) {
+    cnt = 0;
+  }
+
+  if (thread_current() != idle_thread) {
+    thread_current()->recent_cpu++;
+  }
 }
 
 /* Called by the timer interrupt handler at each timer tick.
@@ -236,6 +328,7 @@ thread_create (const char *name, int priority,
 
   struct thread* cur = thread_current();
   t->nice = cur->nice;
+  t->recent_cpu = cur->recent_cpu;
   list_push_back(&cur->child_list, &t->child_elem);
 
   intr_set_level (old_level);
@@ -261,8 +354,6 @@ thread_block (void)
 
   struct thread* t = thread_current();
   t->status = THREAD_BLOCKED;
-  t->priority -= t->starve_time;
-  t->starve_time = 0;
   schedule ();
 }
 
