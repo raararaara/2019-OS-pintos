@@ -199,7 +199,7 @@ static fixed_t div(fixed_t a, fixed_t b) {
   return r;
 }
 
-void thread_aging() {
+static void thread_aging(void) {
   static int ticks = 0;
   if (ticks++ % 4 == 0) {
     struct list_elem* e;
@@ -208,7 +208,9 @@ void thread_aging() {
       struct thread* t = list_entry(e, struct thread, elem);
       int nice = t->nice;
       int recent_cpu = t->recent_cpu;
-      t->priority = get_int(sub(sub(conv(PRI_MAX), div(conv(recent_cpu), conv(4))), mul(conv(nice), conv(2))));
+      t->priority = getint(sub(
+            sub(conv(PRI_MAX), div(recent_cpu, conv(4))), 
+            mul(conv(nice), conv(2))));
     }
     list_sort(&ready_list, priority_cmp, NULL);
   }
@@ -217,12 +219,15 @@ void thread_aging() {
   }
 
   static int cnt = 0;
-  for (cnt++ % 100 == 0) {
+  if (cnt++ % 100 == 0) {
     struct list_elem* e;
     for (e = list_begin(&all_list); e != list_end(&all_list);
         e = list_next(e)) {
       struct thread* t = list_entry(e, struct thread, allelem);
-      //t->recent_cpu = mul(conv(2), get_)
+      t->recent_cpu = add(mul(div(
+            mul(conv(2), load_avg),
+            add(mul(conv(2), load_avg), conv(1))),
+          t->recent_cpu), conv(t->nice)); 
     } 
   }
   if (cnt == 100) {
