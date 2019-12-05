@@ -129,13 +129,16 @@ thread_start (void)
 }
 
 void thread_aging() {
-  struct thread *cur = thread_current();
-  if (cur->status == THREAD_BLOCKED) {
-    if (cur->priority < PRI_MAX) {
-      cur->priority++;
-      cur->starve_time++;
+  struct list_elem* e;
+  for (e = list_begin(&ready_list); e != list_end(&ready_list);
+      e = list_next(e)) {
+    struct thread* t = list_entry(e, struct thread, elem);
+    if (t->priority < PRI_MAX) {
+      t->priority++;
+      t->starve_time++;
     }
   }
+  list_sort(&ready_list, priority_cmp, NULL);
 }
 
 /* Called by the timer interrupt handler at each timer tick.
