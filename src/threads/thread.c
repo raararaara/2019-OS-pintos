@@ -199,10 +199,13 @@ static fixed_t div(fixed_t a, fixed_t b) {
   }
   return r;
 }
+static void print(fixed_t t) {
+    printf("%d.%02d\n", getint(t), getfrac(t));
+}
 
 static void thread_aging(void) {
   static int ticks = 0;
-  if (ticks++ % 4 == 0) {
+  if (ticks % 4 == 0) {
     struct list_elem* e;
     for (e = list_begin(&ready_list); e != list_end(&ready_list);
         e = list_next(e)) {
@@ -214,13 +217,11 @@ static void thread_aging(void) {
             mul(conv(nice), conv(2))));
     }
     list_sort(&ready_list, priority_cmp, NULL);
-  }
-  if (ticks == 4) {
     ticks = 0;
-  }
+  } 
 
   static int cnt = 0;
-  if (cnt++ % 100 == 0) {
+  if (++cnt % 100 == 0) {
     struct list_elem* e;
     for (e = list_begin(&all_list); e != list_end(&all_list);
         e = list_next(e)) {
@@ -230,8 +231,6 @@ static void thread_aging(void) {
             add(mul(conv(2), load_avg), conv(1))),
           t->recent_cpu), conv(t->nice)); 
     } 
-  }
-  if (cnt == 100) {
     cnt = 0;
   }
 
@@ -262,13 +261,18 @@ thread_tick (void)
     intr_yield_on_return ();
 #ifndef USERPROG
   //thread_wake_up();
-  if(thread_prior_aging == true)
+  //if(thread_prior_aging == true)
 	thread_aging();
 #endif
   int ready_thread = (int)list_size(&ready_list);
   if(thread_current() != idle_thread) ready_thread++;
-  load_avg = add(mul(div(conv(59),conv(60)),load_avg),
-			     mul(div(conv(1),conv(60)),conv(ready_thread)));
+
+  static int cnt = 0;
+  if (++cnt % 100 == 0) {
+    load_avg = add(mul(div(conv(59),conv(60)),load_avg),
+                   mul(div(conv(1),conv(60)),conv(ready_thread)));
+    cnt = 0;
+  }
 }
 
 /* Prints thread statistics. */
@@ -513,7 +517,7 @@ thread_get_nice (void)
 int
 thread_get_load_avg (void) 
 {
-  return getint(load_avg);
+  return getint(mul(conv(100), load_avg));
 }
 
 /* Returns 100 times the current thread's recent_cpu value. */
