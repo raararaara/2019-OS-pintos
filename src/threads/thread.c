@@ -235,7 +235,7 @@ static void thread_aging(void) {
   }
 
   if (thread_current() != idle_thread) {
-    thread_current()->recent_cpu++;
+    thread_current()->recent_cpu = add(conv(1), thread_current()->recent_cpu);
   }
 }
 
