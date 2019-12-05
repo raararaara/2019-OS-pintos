@@ -204,6 +204,16 @@ static void print(fixed_t t) {
 }
 
 static void thread_aging(void) {
+  struct list_elem* e;
+  for (e = list_begin(&ready_list); e != list_end(&ready_list);
+          e = list_next(e)) {
+    struct thread* t = list_entry(e, struct thread, elem);
+    if (t->priority < PRI_MAX) {
+        t->priority++;
+        t->starve_time++;
+      }
+  }
+  list_sort(&ready_list, priority_cmp, NULL);
 }
 
 /* Called by the timer interrupt handler at each timer tick.
@@ -229,7 +239,7 @@ thread_tick (void)
 #ifndef USERPROG
   //thread_wake_up();
   if(thread_prior_aging == true)
-	thread_aging();
+    thread_aging();
 
   if (thread_mlfqs) {
     static int ticks = 0;
@@ -355,7 +365,7 @@ thread_create (const char *name, int priority,
   /* Add to run queue. */
   thread_unblock (t);
   if(priority > thread_get_priority())
-	thread_yield();
+    thread_yield();
   return tid;
 }
 
@@ -373,6 +383,8 @@ thread_block (void)
 
   struct thread* t = thread_current();
   t->status = THREAD_BLOCKED;
+  t->priority -= t->starve_time; 
+  t->starve_time = 0;
   schedule ();
 }
 
@@ -626,7 +638,7 @@ init_thread (struct thread *t, const char *name, int priority)
   sema_init(&t->init_sema, 0);
   int i;
   for(i = 0; i < 128; i++)
-	  t->open_files[i] = 0;
+      t->open_files[i] = 0;
 }
 
 /* Allocates a SIZE-byte frame at the top of thread T's stack and

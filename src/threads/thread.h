@@ -101,6 +101,8 @@ struct thread
 
     int nice;
     fixed_t recent_cpu;
+    
+    int64_t starve_time; 
 
     /* Owned by alarm.c */
     struct list_elem timer_elem;
