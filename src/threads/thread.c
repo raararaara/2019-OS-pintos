@@ -267,8 +267,8 @@ thread_tick (void)
 #endif
   int ready_thread = (int)list_size(&ready_list);
   if(thread_current() != idle_thread) ready_thread++;
-  load_avg = add(mul(div(conv(59),conv(60))*load_avg),
-			     mul(div(conv(1),conv(60)),conv(ready_thread));
+  load_avg = add(mul(div(conv(59),conv(60)),load_avg),
+			     mul(div(conv(1),conv(60)),conv(ready_thread)));
 }
 
 /* Prints thread statistics. */
