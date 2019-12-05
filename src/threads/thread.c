@@ -49,6 +49,7 @@ struct kernel_thread_frame
 static long long idle_ticks;    /* # of timer ticks spent idle. */
 static long long kernel_ticks;  /* # of timer ticks in kernel threads. */
 static long long user_ticks;    /* # of timer ticks in user programs. */
+static fixed_t load_avg;
 
 /* Scheduling. */
 #define TIME_SLICE 4            /* # of timer ticks to give each thread. */
@@ -111,6 +112,7 @@ thread_init (void)
   initial_thread->tid = allocate_tid ();
   initial_thread->nice = 0;
   initial_thread->recent_cpu = 0;
+  load_avg = 0;
 }
 
 /* Starts preemptive thread scheduling by enabling interrupts.
@@ -130,7 +132,6 @@ thread_start (void)
   sema_down (&start_idle);
 }
 
-typedef unsigned int fixed_t;
 static int sign(fixed_t a) {
   if (a & 0x80000000u) {
     return -1;
@@ -207,8 +208,8 @@ void thread_aging() {
         e = list_next(e)) {
       struct thread* t = list_entry(e, struct thread, elem);
       int nice = t->nice;
-      int recent_cpu = t->recent_cpu;
-      t->priority = get_int(sub(sub(conv(PRI_MAX), div(conv(recent_cpu), conv(4))), mul(conv(nice), conv(2))));
+      fixed_t recent_cpu = t->recent_cpu;
+      t->priority = get_int(sub(sub(conv(PRI_MAX), div(recent_cpu, conv(4))), mul(conv(nice), conv(2))));
     }
     list_sort(&ready_list, priority_cmp, NULL);
   }
@@ -259,6 +260,10 @@ thread_tick (void)
   if(thread_prior_aging == true)
 	thread_aging();
 #endif
+  int ready_thread = (int)list_size(&ready_list);
+  if(thread_current() != idle_thread) ready_thread++;
+  load_avg = add(mul(div(conv(59),conv(60))*load_avg),
+			     mul(div(conv(1),conv(60)),conv(ready_thread));
 }
 
 /* Prints thread statistics. */
@@ -503,16 +508,14 @@ thread_get_nice (void)
 int
 thread_get_load_avg (void) 
 {
-  /* Not yet implemented. */
-  return 0;
+  return getint(load_avg);
 }
 
 /* Returns 100 times the current thread's recent_cpu value. */
 int
 thread_get_recent_cpu (void) 
 {
-  /* Not yet implemented. */
-  return 0;
+  return getint(mul(conv(100), thread_current()->recent_cpu));
 }
 
 /* Idle thread.  Executes when no other thread is ready to run.
