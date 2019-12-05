@@ -73,9 +73,10 @@ static void schedule (void);
 void thread_schedule_tail (struct thread *prev);
 static tid_t allocate_tid (void);
 
-bool
+static bool
 priority_cmp(const struct list_elem *a, const struct list_elem *b, void *aux)
 {
+  (void)aux;
   struct thread *aa = list_entry(a, struct thread, elem);
   struct thread *bb = list_entry(b, struct thread, elem);
   return aa->priority > bb->priority;
