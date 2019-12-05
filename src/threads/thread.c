@@ -109,6 +109,7 @@ thread_init (void)
   init_thread (initial_thread, "main", PRI_DEFAULT);
   initial_thread->status = THREAD_RUNNING;
   initial_thread->tid = allocate_tid ();
+  initial_thread->nice = 0;
 }
 
 /* Starts preemptive thread scheduling by enabling interrupts.
@@ -234,6 +235,7 @@ thread_create (const char *name, int priority,
   sf->ebp = 0;
 
   struct thread* cur = thread_current();
+  t->nice = cur->nice;
   list_push_back(&cur->child_list, &t->child_elem);
 
   intr_set_level (old_level);
@@ -394,17 +396,16 @@ thread_get_priority (void)
 
 /* Sets the current thread's nice value to NICE. */
 void
-thread_set_nice (int nice UNUSED) 
+thread_set_nice (int nice) 
 {
-  /* Not yet implemented. */
+  thread_current()->nice = nice;
 }
 
 /* Returns the current thread's nice value. */
 int
 thread_get_nice (void) 
 {
-  /* Not yet implemented. */
-  return 0;
+  return thread_current()->nice;
 }
 
 /* Returns 100 times the system load average. */

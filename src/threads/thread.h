@@ -99,6 +99,7 @@ struct thread
 
     // time spent without occupying the cpu
     int64_t starve_time;
+    int nice;
 
     /* Owned by alarm.c */
     struct list_elem timer_elem;
