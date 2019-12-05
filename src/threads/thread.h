@@ -23,6 +23,8 @@ enum thread_status
 typedef int tid_t;
 #define TID_ERROR ((tid_t) -1)          /* Error value for tid_t. */
 
+typedef unsigned int fixed_t;
+
 /* Thread priorities. */
 #define PRI_MIN 0                       /* Lowest priority. */
 #define PRI_DEFAULT 31                  /* Default priority. */
@@ -98,7 +100,7 @@ struct thread
     struct list_elem elem;              /* List element. */
 
     int nice;
-    int recent_cpu;
+    fixed_t recent_cpu;
 
     /* Owned by alarm.c */
     struct list_elem timer_elem;
