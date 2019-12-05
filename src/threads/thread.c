@@ -204,39 +204,6 @@ static void print(fixed_t t) {
 }
 
 static void thread_aging(void) {
-  static int ticks = 0;
-  if (ticks % 4 == 0) {
-    struct list_elem* e;
-    for (e = list_begin(&ready_list); e != list_end(&ready_list);
-        e = list_next(e)) {
-      struct thread* t = list_entry(e, struct thread, elem);
-      int nice = t->nice;
-      int recent_cpu = t->recent_cpu;
-      t->priority = getint(sub(
-            sub(conv(PRI_MAX), div(recent_cpu, conv(4))), 
-            mul(conv(nice), conv(2))));
-    }
-    list_sort(&ready_list, priority_cmp, NULL);
-    ticks = 0;
-  } 
-
-  static int cnt = 0;
-  if (++cnt % 100 == 0) {
-    struct list_elem* e;
-    for (e = list_begin(&all_list); e != list_end(&all_list);
-        e = list_next(e)) {
-      struct thread* t = list_entry(e, struct thread, allelem);
-      t->recent_cpu = add(mul(div(
-            mul(conv(2), load_avg),
-            add(mul(conv(2), load_avg), conv(1))),
-          t->recent_cpu), conv(t->nice)); 
-    } 
-    cnt = 0;
-  }
-
-  if (thread_current() != idle_thread) {
-    thread_current()->recent_cpu = add(conv(1), thread_current()->recent_cpu);
-  }
 }
 
 /* Called by the timer interrupt handler at each timer tick.
@@ -261,8 +228,46 @@ thread_tick (void)
     intr_yield_on_return ();
 #ifndef USERPROG
   //thread_wake_up();
-  //if(thread_prior_aging == true)
+  if(thread_prior_aging == true)
 	thread_aging();
+
+  if (thread_mlfqs) {
+    static int ticks = 0;
+    if (ticks % 4 == 0) {
+      struct list_elem* e;
+      for (e = list_begin(&ready_list); e != list_end(&ready_list);
+          e = list_next(e)) {
+        struct thread* t = list_entry(e, struct thread, elem);
+        int nice = t->nice;
+        int recent_cpu = t->recent_cpu;
+        t->priority = getint(sub(
+              sub(conv(PRI_MAX), div(recent_cpu, conv(4))), 
+              mul(conv(nice), conv(2))));
+      }
+      // FIXME
+      list_sort(&ready_list, priority_cmp, NULL);
+      ticks = 0;
+    } 
+
+    static int cnt = 0;
+    if (++cnt % 100 == 0) {
+      struct list_elem* e;
+      for (e = list_begin(&all_list); e != list_end(&all_list);
+          e = list_next(e)) {
+        struct thread* t = list_entry(e, struct thread, allelem);
+        t->recent_cpu = add(mul(div(
+              mul(conv(2), load_avg),
+              add(mul(conv(2), load_avg), conv(1))),
+            t->recent_cpu), conv(t->nice)); 
+      } 
+      cnt = 0;
+    }
+
+    if (thread_current() != idle_thread) {
+      thread_current()->recent_cpu = add(conv(1), thread_current()->recent_cpu);
+    }
+
+  }
 #endif
   int ready_thread = (int)list_size(&ready_list);
   if(thread_current() != idle_thread) ready_thread++;
